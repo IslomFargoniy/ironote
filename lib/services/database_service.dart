@@ -371,44 +371,21 @@ class DatabaseService extends ChangeNotifier {
     return true;
   }
 
-  void loginWithGoogle() {
-    final googleUser = UserModel(
-      id: DateTime.now().millisecondsSinceEpoch,
-      fullName: "Google Foydalanuvchisi",
-      username: "google_user_${DateTime.now().millisecondsSinceEpoch % 1000}",
-      phone: "+998 90 777 66 55",
-      email: "google.user@gmail.com",
-      dateOfBirth: "1998-01-01",
-      password: "GoogleAuthSecurePass123!",
-      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150",
-      googleId: "google_oauth_${DateTime.now().millisecondsSinceEpoch}",
-    );
-    _users.add(googleUser);
-    _currentUser = googleUser;
-    _saveToPreferences();
-    notifyListeners();
-  }
-
-  void loginWithTelegram() {
-    final tgUser = UserModel(
-      id: DateTime.now().millisecondsSinceEpoch,
-      fullName: "Telegram Foydalanuvchisi",
-      username: "tg_user_${DateTime.now().millisecondsSinceEpoch % 1000}",
-      phone: "+998 99 123 45 67",
-      email: "telegram@ironote.uz",
-      dateOfBirth: "1996-05-20",
-      password: "TgSecurePass123!",
-      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
-    );
-    _users.add(tgUser);
-    _currentUser = tgUser;
-    _saveToPreferences();
-    notifyListeners();
-  }
-
   void logout() {
     _currentUser = null;
     _saveToPreferences();
+    notifyListeners();
+  }
+
+  /// Permanently removes the signed-in user together with all their debts and repayments.
+  Future<void> deleteCurrentAccount() async {
+    final user = _currentUser;
+    if (user == null) return;
+    _debts.removeWhere((d) => d.userId == user.id);
+    _repayments.removeWhere((r) => r.userId == user.id);
+    _users.removeWhere((u) => u.id == user.id);
+    _currentUser = null;
+    await _saveToPreferences();
     notifyListeners();
   }
 

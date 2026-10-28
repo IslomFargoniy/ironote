@@ -483,64 +483,6 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
                             const SizedBox(height: 18),
 
-                            // Divider
-                            Row(
-                              children: [
-                                Expanded(child: Divider(color: borderColor, thickness: 1)),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                                  child: Text(
-                                    t('orContinueWith'),
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 1.0,
-                                      color: textSecondary.withOpacity(0.7),
-                                    ),
-                                  ),
-                                ),
-                                Expanded(child: Divider(color: borderColor, thickness: 1)),
-                              ],
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            // Social & Quick Buttons
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                _buildSocialButton(
-                                  icon: Icons.g_mobiledata_rounded,
-                                  iconColor: Colors.redAccent,
-                                  isDark: isDark,
-                                  borderColor: borderColor,
-                                  onTap: () {
-                                    DatabaseService().loginWithGoogle();
-                                    widget.onLoginSuccess?.call();
-                                  },
-                                ),
-                                const SizedBox(width: 16),
-                                _buildSocialButton(
-                                  icon: Icons.send_rounded,
-                                  iconColor: const Color(0xFF0088CC),
-                                  isDark: isDark,
-                                  borderColor: borderColor,
-                                  onTap: () {
-                                    DatabaseService().loginWithTelegram();
-                                    widget.onLoginSuccess?.call();
-                                  },
-                                ),
-                                const SizedBox(width: 16),
-                                _buildSocialButton(
-                                  icon: Icons.fingerprint_rounded,
-                                  iconColor: AppTheme.neonGreen,
-                                  isDark: isDark,
-                                  borderColor: borderColor,
-                                  onTap: _handleDemoLogin,
-                                ),
-                              ],
-                            ),
-
                             const SizedBox(height: 24),
 
                             // Footer Tagline
@@ -860,35 +802,4 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         ),
       ),
     );
-  }
-
-  Widget _buildSocialButton({
-    required IconData icon,
-    required Color iconColor,
-    required bool isDark,
-    required Color borderColor,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        width: 52,
-        height: 52,
-        decoration: BoxDecoration(
-          color: isDark ? AppTheme.darkCard : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderColor),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Icon(icon, color: iconColor, size: 26),
-      ),
-    );
-  }
-}
+  }}

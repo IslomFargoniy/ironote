@@ -434,6 +434,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // --- DELETE ACCOUNT (Google Play requirement) ---
+  void _handleDeleteAccount() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t('deleteAccount')),
+        content: Text(t('deleteAccountConfirm')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(t('cancel')),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await SecurityService().disableSecurity();
+              await DatabaseService().deleteCurrentAccount();
+            },
+            child: Text(t('delete'), style: const TextStyle(color: AppTheme.danger, fontWeight: FontWeight.w800)),
+          ),
+        ],
+      ),
+    );
+  }
+
   // --- PIN & BIOMETRICS SECURITY MODAL ---
   void _handleSecuritySettings() {
     final security = SecurityService();
@@ -524,6 +549,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         value: security.isBiometricsEnabled,
                         activeColor: AppTheme.neonGreen,
                         onChanged: (val) async {
+                          if (val) {
+                            if (!security.isPinEnabled) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Avval 4 xonali PIN-kod o'rnating.")),
+                              );
+                              return;
+                            }
+                            if (!await security.canUseBiometrics()) {
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Qurilmada barmoq izi yoki yuz tanish sozlanmagan.")),
+                              );
+                              return;
+                            }
+                          }
                           await security.toggleBiometrics(val);
                           setModalState(() {});
                           setState(() {});
@@ -1079,6 +1119,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // 6. Delete Account Button
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton.icon(
+                    onPressed: _handleDeleteAccount,
+                    icon: const Icon(Icons.delete_forever_rounded, color: AppTheme.danger, size: 20),
+                    label: Text(t('deleteAccount'), style: const TextStyle(color: AppTheme.danger, fontWeight: FontWeight.w700, fontSize: 14)),
                   ),
                 ),
 

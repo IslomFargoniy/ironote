@@ -25,6 +25,9 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> with SingleTi
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
+    if (SecurityService().isBiometricsEnabled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _triggerBiometricScan());
+    }
   }
 
   @override
@@ -60,7 +63,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> with SingleTi
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("🔒 PIN kod noto'g'ri! (Standart PIN: 2026)"),
+          content: Text("🔒 PIN kod noto'g'ri!"),
           backgroundColor: AppTheme.danger,
           behavior: SnackBarBehavior.floating,
         ),
@@ -72,25 +75,18 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> with SingleTi
   }
 
   void _triggerBiometricScan() async {
+    if (_isScanning) return;
     setState(() => _isScanning = true);
-    await Future.delayed(const Duration(milliseconds: 1000));
+    final ok = await SecurityService().authenticateWithBiometrics("Ironote'ga kirishni tasdiqlang");
+    if (!mounted) return;
     setState(() => _isScanning = false);
-
-    // Biometric verified
-    SecurityService().unlockApp();
-    widget.onUnlocked();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("✓ Barmoq izi orqali muvaffaqiyatli tasdiqlandi!"),
-        backgroundColor: AppTheme.success,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    if (ok) widget.onUnlocked();
   }
 
   @override
   Widget build(BuildContext context) {
     final user = DatabaseService().currentUser;
+    final biometricsOn = SecurityService().isBiometricsEnabled;
 
     return Scaffold(
       body: Container(
@@ -156,6 +152,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> with SingleTi
                   const SizedBox(height: 20),
 
                   // Biometric Fingerprint Button with Neon Glow Animation
+                  if (biometricsOn) ...[
                   GestureDetector(
                     onTap: _triggerBiometricScan,
                     child: AnimatedBuilder(
@@ -192,6 +189,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> with SingleTi
                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.neonGreen),
                   ),
                   const SizedBox(height: 20),
+                  ],
 
                   // 4-Dot PIN Indicator
                   Row(
@@ -234,7 +232,9 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> with SingleTi
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            _buildSpecialKey(Icons.fingerprint, _triggerBiometricScan),
+                            biometricsOn
+                                ? _buildSpecialKey(Icons.fingerprint, _triggerBiometricScan)
+                                : const SizedBox(width: 62, height: 62),
                             _buildNumberKey("0"),
                             _buildSpecialKey(Icons.backspace_outlined, _onDeleteTap),
                           ],

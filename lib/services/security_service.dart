@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SecurityService extends ChangeNotifier {
@@ -8,10 +9,12 @@ class SecurityService extends ChangeNotifier {
     _loadSettings();
   }
 
-  bool _isPinEnabled = true;
-  bool _isBiometricsEnabled = true;
-  String _savedPin = '2026';
-  bool _isLocked = true;
+  final LocalAuthentication _localAuth = LocalAuthentication();
+
+  bool _isPinEnabled = false;
+  bool _isBiometricsEnabled = false;
+  String _savedPin = '';
+  bool _isLocked = false;
 
   bool get isPinEnabled => _isPinEnabled;
   bool get isBiometricsEnabled => _isBiometricsEnabled;
@@ -21,10 +24,10 @@ class SecurityService extends ChangeNotifier {
   Future<void> _loadSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      _isPinEnabled = prefs.getBool('security_pin_enabled') ?? true;
-      _isBiometricsEnabled = prefs.getBool('security_biometrics_enabled') ?? true;
-      _savedPin = prefs.getString('security_pin_code') ?? '2026';
-      _isLocked = _isPinEnabled || _isBiometricsEnabled;
+      _savedPin = prefs.getString('security_pin_code') ?? '';
+      _isPinEnabled = (prefs.getBool('security_pin_enabled') ?? false) && _savedPin.isNotEmpty;
+      _isBiometricsEnabled = _isPinEnabled && (prefs.getBool('security_biometrics_enabled') ?? false);
+      _isLocked = _isPinEnabled;
       notifyListeners();
     } catch (_) {}
   }
@@ -59,12 +62,39 @@ class SecurityService extends ChangeNotifier {
   }
 
   bool verifyPin(String enteredPin) {
-    if (enteredPin == _savedPin || enteredPin == '2026') {
+    if (_savedPin.isNotEmpty && enteredPin == _savedPin) {
       _isLocked = false;
       notifyListeners();
       return true;
     }
     return false;
+  }
+
+  /// Whether the device has enrolled biometrics (fingerprint / face).
+  Future<bool> canUseBiometrics() async {
+    try {
+      if (!await _localAuth.isDeviceSupported()) return false;
+      final available = await _localAuth.getAvailableBiometrics();
+      return available.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Shows the system biometric prompt. Returns true only on real success.
+  Future<bool> authenticateWithBiometrics(String reason) async {
+    if (!_isBiometricsEnabled) return false;
+    try {
+      final ok = await _localAuth.authenticate(
+        localizedReason: reason,
+        biometricOnly: true,
+      );
+      if (ok) unlockApp();
+      return ok;
+    } catch (e) {
+      debugPrint('Biometric auth error: $e');
+      return false;
+    }
   }
 
   void lockApp() {
